@@ -6,6 +6,7 @@ function App() {
 
   const [question, setQuestion] = useState('');
   const [result, setResult] = useState([]);
+  const [recentHistory, setRecentHistory]=useState(JSON.parse(localStorage.getItem('history')));
 
   const payload = {
     "contents": [{
@@ -14,6 +15,18 @@ function App() {
   }
 
   const handelAskQue= async()=>{
+
+    if(localStorage.getItem('history')){
+      let history = JSON.parse(localStorage.getItem('history'))
+      history = [question, ...history]
+      localStorage.setItem('history',JSON.stringify(history))
+      setRecentHistory(history)
+    } else {
+      localStorage.setItem('history',JSON.stringify([question]))
+      setRecentHistory([question])
+    }
+    
+
     let response = await fetch(URL, {
       method: 'POST',
       body:JSON.stringify(payload)
@@ -28,13 +41,21 @@ function App() {
     setResult([...result, {type:'q', text:question},{type:'a', text:dataString}])
   }
      
-  console.log(result);
+  console.log(recentHistory);
   
 
 
   return (
    <div className="grid grid-cols-5 h-screen text-center">
-    <div className=" bg-zinc-800 col-span-1"></div>
+    <div className=" bg-zinc-800 col-span-1">
+      <ul>
+        {
+          recentHistory && recentHistory.map((item) => (
+            <li>{item}</li>
+          ))
+        }
+      </ul>
+    </div>
     <div className=" col-span-4 p-4">
       <div className=" container h-[500px] overflow-y-auto">
         <div className=" text-zinc-300">
