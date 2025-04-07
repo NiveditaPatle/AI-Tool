@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { URL } from "./constant";
 import Answers from "./components/Answers";
 
@@ -7,23 +7,33 @@ function App() {
   const [question, setQuestion] = useState('');
   const [result, setResult] = useState([]);
   const [recentHistory, setRecentHistory]=useState(JSON.parse(localStorage.getItem('history')));
+  const [selectedHistory, setSelectedHistory] = useState('');
 
-  const payload = {
-    "contents": [{
-    "parts":[{"text": question}]
-    }]
-  }
+ 
 
   const handelAskQue= async()=>{
 
-    if(localStorage.getItem('history')){
-      let history = JSON.parse(localStorage.getItem('history'))
-      history = [question, ...history]
-      localStorage.setItem('history',JSON.stringify(history))
-      setRecentHistory(history)
-    } else {
-      localStorage.setItem('history',JSON.stringify([question]))
-      setRecentHistory([question])
+    if(!question && !selectedHistory){
+      return false
+    }
+
+    if(question){
+      if(localStorage.getItem('history')){
+        let history = JSON.parse(localStorage.getItem('history'))
+        history = [question, ...history]
+        localStorage.setItem('history',JSON.stringify(history))
+        setRecentHistory(history)
+      } else {
+        localStorage.setItem('history',JSON.stringify([question]))
+        setRecentHistory([question])
+      }
+    }
+
+    const payloadData = question ? question : selectedHistory
+    const payload = {
+      "contents": [{
+      "parts":[{"text": payloadData}]
+      }]
     }
     
 
@@ -38,16 +48,30 @@ function App() {
     dataString= dataString.map((item)=>item.trim())
 
     // console.log(dataString)
-    setResult([...result, {type:'q', text:question},{type:'a', text:dataString}])
+    setResult([...result, {type:'q', text:question?question:selectedHistory},{type:'a', text:dataString}])
+    setQuestion('');
   }
      
-  console.log(recentHistory);
+  // console.log(recentHistory);
   
 
   const clearHistory = () => {
     localStorage.clear();
     setRecentHistory([]);
   }
+
+  const isEnter = (event) => {
+    // console.log(event.key)
+    if(event.key === 'Enter') {
+      handelAskQue();
+    }
+  }
+
+  useEffect(() => {
+    console.log(selectedHistory);
+    handelAskQue();
+    
+  }, [selectedHistory])
 
   return (
    <div className="grid grid-cols-5 h-screen text-center">
@@ -59,8 +83,8 @@ function App() {
     </button></h1>
       <ul className=" text-left overflow-auto mt-3">
         {
-          recentHistory && recentHistory.map((item) => (
-            <li className="p-1 pl-5 px-4 truncate text-zinc-400 cursor-pointer hover:bg-zinc-700 hover:text-zinc-200">{item}</li>
+          recentHistory && recentHistory.map((item, index) => (
+            <li key={index} onClick={()=>setSelectedHistory(item)} className="p-1 pl-5 px-4 truncate text-zinc-400 cursor-pointer hover:bg-zinc-700 hover:text-zinc-200">{item}</li>
           ))
         }
       </ul>
@@ -96,7 +120,9 @@ function App() {
         </div>
       </div>
       <div className=" bg-zinc-800 w-1/2 text-white m-auto rounded-3xl border border-zinc-700 px-3 py-1 flex h-12">
-        <input className=" bg-zinc-800 w-full h-full p-3 outline-none" type="text" placeholder="Ask me anything" value={question} onChange={(e)=>setQuestion(e.target.value)}/>
+        <input className=" bg-zinc-800 w-full h-full p-3 outline-none" type="text" placeholder="Ask me anything" value={question} 
+        onKeyDown={isEnter}
+        onChange={(e)=>setQuestion(e.target.value)}/>
         <button onClick={handelAskQue}>Ask</button>
       </div>
     </div>
